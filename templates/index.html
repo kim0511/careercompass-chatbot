@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>진로나침반 — 경영정보학과 취업지원</title>
+  <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+
+<nav>
+  <div class="nav-inner">
+    <a href="/" class="logo">
+      <div class="logo-icon">
+        <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 14H9V8h2v8zm4 0h-2V8h2v8z" opacity=".3"/><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm-1-4h2v2h-2v-2zm0-10h2v8h-2V6z"/></svg>
+      </div>
+      <div class="logo-text">
+        <h1>진로나침반</h1>
+        <p>경영정보학과 취업지원</p>
+      </div>
+    </a>
+    <div class="nav-links">
+      <a href="/" class="active">홈</a>
+      <a href="/chatbot">채용 챗봇</a>
+      <a href="/curriculum">커리큘럼 가이드</a>
+    </div>
+  </div>
+</nav>
+
+<section class="hero">
+  <span class="hero-badge">동아대학교 경영정보학과 진로 지원 서비스</span>
+  <h2>취업 준비, 어디서부터 막막한가요?</h2>
+  <p>원하는 방향을 선택하면 바로 안내해 드립니다.</p>
+</section>
+
+<div class="choice-grid">
+
+  <!-- 좌: 진로 탐색 -->
+  <div class="choice-col">
+    <a href="/curriculum" class="choice-btn choice-btn-green">
+      <span class="choice-icon">🧭</span>
+      <span class="choice-label">뭘 물어야 할 지<br>모르겠을 때</span>
+    </a>
+    <ul class="choice-examples">
+      <li>경영정보학과 나오면 어디 취업해요?</li>
+      <li>데이터 직무는 어떻게 준비하나요?</li>
+    </ul>
+  </div>
+
+  <!-- 우: 채용공고 챗봇 -->
+  <div class="choice-col">
+    <a href="/chatbot" class="choice-btn choice-btn-blue">
+      <span class="choice-icon">🔍</span>
+      <span class="choice-label">공공기관·공기업<br>지원 조건이 궁금해요</span>
+    </a>
+    <ul class="choice-examples">
+      <li>한전 어학 커트라인이 얼마예요?</li>
+      <li>코레일 NCS 직무가 뭔가요?</li>
+    </ul>
+  </div>
+
+</div>
+
+<footer>
+  동아대학교 경영정보학과 · 진로나침반 (베타) — 본 화면은 디자인 초안입니다
+</footer>
+
+<script>
+function handleSearch(e) {
+  e.preventDefault();
+  const q = document.getElementById("search-input").value.trim();
+  if (!q) return;
+  const keywords = ["자격", "어학", "토익", "지원", "채용", "전형", "NCS", "기관", "공사", "공단", "은행", "코레일", "한전", "LH"];
+  const isChatbot = keywords.some(k => q.includes(k));
+  if (isChatbot) {
+    window.location.href = "/chatbot?q=" + encodeURIComponent(q);
+  } else {
+    window.location.href = "/curriculum";
+  }
+}
+</script>
+</body>
+</html>

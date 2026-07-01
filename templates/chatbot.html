@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>채용 챗봇 — 진로나침반</title>
+  <link rel="stylesheet" href="/static/css/style.css">
+  <style>
+    /* 추천 기관 배지 */
+    .org-tag.recommended {
+      border-color: #2563eb;
+      color: #1d4ed8;
+      font-weight: 600;
+    }
+    .org-tag.recommended.active {
+      background: #2563eb;
+      color: #fff;
+    }
+    .rec-badge {
+      display: inline-block;
+      font-size: 0.6rem;
+      font-weight: 800;
+      letter-spacing: .04em;
+      background: #fbbf24;
+      color: #78350f;
+      border-radius: 4px;
+      padding: 1px 5px;
+      margin-right: 2px;
+      vertical-align: middle;
+      line-height: 1.4;
+    }
+    /* 사이드바 섹션 소제목 */
+    .sidebar-card h4 { display: flex; align-items: center; flex-wrap: wrap; gap: 4px; }
+  </style>
+</head>
+<body>
+
+<nav>
+  <div class="nav-inner">
+    <a href="/" class="logo">
+      <div class="logo-icon">
+        <svg viewBox="0 0 24 24" fill="white"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1-4h2v2h-2v-2zm0-10h2v8h-2V6z"/></svg>
+      </div>
+      <div class="logo-text">
+        <h1>진로나침반</h1>
+        <p>경영정보학과 취업지원</p>
+      </div>
+    </a>
+    <div class="nav-links">
+      <a href="/">홈</a>
+      <a href="/chatbot" class="active">채용 챗봇</a>
+      <a href="/curriculum">커리큘럼 가이드</a>
+    </div>
+  </div>
+</nav>
+
+<div class="banner">
+  진로 자체가 막연하다면?&nbsp; <a href="/curriculum">학과 커리큘럼 가이드에서 방향부터 찾아보세요 →</a>
+</div>
+
+<div class="chatbot-layout">
+  <!-- 메인 채팅 -->
+  <div class="chat-main">
+    <div class="chat-header">
+      <div class="chat-title">
+        <div class="chat-icon">
+          <svg viewBox="0 0 24 24" fill="#2d5a9e"><path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2z"/></svg>
+        </div>
+        <h2>채용 정보 챗봇 <span class="online-dot"></span></h2>
+      </div>
+      <p class="chat-subtitle">공기업·공공기관 NCS 채용공고 데이터 기반 · 채용공고에 명시된 조건만 답변합니다</p>
+    </div>
+
+    <div class="chat-messages" id="chat-messages">
+      <div class="msg msg-bot">
+        <div class="bot-avatar">
+          <svg viewBox="0 0 24 24" fill="#2d5a9e"><path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2z"/></svg>
+        </div>
+        <div class="bubble">
+          안녕하세요! 공공기관 채용공고를 기반으로 채용 조건을 안내해드려요. 궁금한 기관과 직무를 알려주세요.
+        </div>
+      </div>
+    </div>
+
+    <div class="chat-input-area">
+      <input id="chat-input" type="text" placeholder="기관명과 직무를 넣어 질문하면 더 정확해요 (예: 코레일 운전직 자격조건)">
+      <button id="send-btn" onclick="sendMessage()">전송</button>
+    </div>
+  </div>
+
+  <!-- 사이드바 -->
+  <div class="chat-sidebar">
+    <div class="sidebar-card">
+      <h4>부산 소재 공공기관 <span style="font-size:0.72rem;font-weight:400;color:#6b7280;margin-left:4px;">경영정보학과 졸업생 진출</span></h4>
+      <div class="org-tags" id="org-tags">
+        {% for org in featured_orgs %}
+        <span
+          class="org-tag {% if org == recommended_org %}recommended{% endif %} {% if org == recommended_org %}active{% endif %}"
+          onclick="selectOrg(this, '{{ org }}')"
+        >
+          {% if org == recommended_org %}<span class="rec-badge">추천</span> {% endif %}{{ org }}
+        </span>
+        {% endfor %}
+      </div>
+    </div>
+
+    <div class="sidebar-card" id="suggestions-card">
+      <h4 id="suggestions-title">{{ recommended_org }} 추천 질문</h4>
+      <div class="suggestions-list" id="suggestions-list"></div>
+    </div>
+
+    <div class="sidebar-card sidebar-cta">
+      <p>'어디에 취업할지'처럼 막연한 고민은 학과 커리큘럼 가이드가 더 잘 도와드려요.</p>
+      <a href="/curriculum">커리큘럼 가이드로 이동 →</a>
+    </div>
+  </div>
+</div>
+
+<footer>
+  동아대학교 경영정보학과 · 진로나침반 (베타) — 본 화면은 디자인 초안입니다
+</footer>
+
+<script>
+let history = [];
+let currentOrg = "{{ recommended_org }}";
+
+async function loadSuggestions(org) {
+  const res = await fetch(`/api/suggestions?org=${encodeURIComponent(org)}`);
+  const data = await res.json();
+  const list = document.getElementById("suggestions-list");
+  document.getElementById("suggestions-title").textContent = org + " 추천 질문";
+  list.innerHTML = data.suggestions.map(s =>
+    `<div class="suggestion-item" onclick="askSuggestion('${s.replace(/'/g,"\\'")}')">
+      <span>${s}</span><span class="arrow">›</span>
+    </div>`
+  ).join("");
+}
+
+function selectOrg(el, org) {
+  document.querySelectorAll(".org-tag").forEach(t => t.classList.remove("active"));
+  el.classList.add("active");
+  currentOrg = org;
+  loadSuggestions(org);
+}
+
+function askSuggestion(text) {
+  document.getElementById("chat-input").value = text;
+  sendMessage();
+}
+
+function appendMessage(role, html) {
+  const container = document.getElementById("chat-messages");
+  const div = document.createElement("div");
+  div.className = "msg msg-" + (role === "user" ? "user" : "bot");
+  if (role === "bot") {
+    div.innerHTML = `<div class="bot-avatar"><svg viewBox="0 0 24 24" fill="#2d5a9e"><path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2z"/></svg></div><div class="bubble">${html}</div>`;
+  } else {
+    div.innerHTML = `<div class="bubble">${escapeHtml(html)}</div>`;
+  }
+  container.appendChild(div);
+  container.scrollTop = container.scrollHeight;
+  return div;
+}
+
+function appendTyping() {
+  const container = document.getElementById("chat-messages");
+  const div = document.createElement("div");
+  div.className = "msg msg-bot";
+  div.id = "typing-indicator";
+  div.innerHTML = `<div class="bot-avatar"><svg viewBox="0 0 24 24" fill="#2d5a9e"><path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2z"/></svg></div><div class="bubble typing"><span></span><span></span><span></span></div>`;
+  container.appendChild(div);
+  container.scrollTop = container.scrollHeight;
+}
+
+function removeTyping() {
+  const el = document.getElementById("typing-indicator");
+  if (el) el.remove();
+}
+
+function escapeHtml(t) {
+  return t.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+}
+
+function formatAnswer(text) {
+  return text
+    .replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>")
+    .replace(/\n/g, "<br>");
+}
+
+async function sendMessage() {
+  const input = document.getElementById("chat-input");
+  const btn = document.getElementById("send-btn");
+  const q = input.value.trim();
+  if (!q) return;
+  input.value = "";
+  btn.disabled = true;
+
+  appendMessage("user", q);
+  history.push({ role: "user", content: q });
+  appendTyping();
+
+  try {
+    const res = await fetch("/api/chat", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ question: q, history: history.slice(-10) })
+    });
+    const data = await res.json();
+    removeTyping();
+
+    if (data.error) {
+      appendMessage("bot", "오류가 발생했어요: " + escapeHtml(data.error));
+    } else {
+      const answer = data.answer || "";
+      history.push({ role: "assistant", content: answer });
+      const msgDiv = appendMessage("bot", formatAnswer(answer));
+
+      // source chip
+      const source = data.meta?.source || data.meta?.route;
+      if (source) {
+        const chip = document.createElement("span");
+        chip.className = "source-chip";
+        const sourceLabel = {
+          posting:     "출처 · 채용공고 기반",
+          experience:  "출처 · 취업 Q&A 게시글 기반",
+          ncs_prep:    "출처 · NCS 직무 데이터 기반",
+          dept_career: "출처 · 학과 진로 데이터 기반",
+        };
+        chip.textContent = sourceLabel[source] || "출처 · 채용공고 기반";
+        msgDiv.querySelector(".bubble").appendChild(chip);
+      }
+
+      // quick replies
+      const replies = ["전형 절차가 궁금해요", "가산점 항목 알려줘", "지원 마감일은 언제?"];
+      const qr = document.createElement("div");
+      qr.className = "quick-replies";
+      replies.forEach(r => {
+        const btn2 = document.createElement("button");
+        btn2.className = "quick-reply";
+        btn2.textContent = r;
+        btn2.onclick = () => { document.getElementById("chat-input").value = r; sendMessage(); };
+        qr.appendChild(btn2);
+      });
+      msgDiv.querySelector(".bubble").appendChild(qr);
+    }
+  } catch (err) {
+    removeTyping();
+    appendMessage("bot", "네트워크 오류가 발생했어요. 잠시 후 다시 시도해주세요.");
+  }
+  btn.disabled = false;
+  document.getElementById("chat-input").focus();
+}
+
+document.getElementById("chat-input").addEventListener("keydown", e => {
+  if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendMessage(); }
+});
+
+// 초기 로드 — 추천 기관 기준
+loadSuggestions(currentOrg);
+
+
+// URL에서 질문 파라미터 처리
+const urlQ = new URLSearchParams(location.search).get("q");
+if (urlQ) { document.getElementById("chat-input").value = urlQ; sendMessage(); }
+</script>
+</body>
+</html>

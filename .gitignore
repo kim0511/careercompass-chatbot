@@ -1,0 +1,50 @@
+# 환경변수 (API 키, DB 비밀번호 — 절대 올리면 안 됨)
+.env
+
+# 파이썬 캐시
+__pycache__/
+*.pyc
+*.pyo
+
+# 로그 및 임시 파일
+*.log
+*.txt
+server_log.txt
+server_run.log
+chat_history.json
+
+# PDF 이미지 (용량 큼)
+pdf_images/
+
+# Claude 세션 데이터
+.claude/
+
+# Windows 시스템 파일
+Thumbs.db
+desktop.ini
+
+# 정리된 임시/디버그 파일
+check_labels.py
+check_neo4j.py
+check_neo4j_data.py
+check_server.py
+check_toeic.py
+clean_env.py
+debug_test.py
+eval_before_after.py
+extract_pdf_images.py
+fix_env.py
+install_docker.py
+load_dump.py
+make_ppt.py
+make_ppt_v2.py
+make_ppt_v3.py
+orgs.json
+patch_html.py
+redeploy_neo4j.py
+restart_neo4j.py
+run_docker.py
+transfer_dump.py
+update_mysql.py
+ui/
+ui_server/

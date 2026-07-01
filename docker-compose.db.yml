@@ -1,0 +1,60 @@
+services:
+
+  neo4j:
+    image: neo4j:2026.02-enterprise
+    container_name: jobseeker_neo4j
+    restart: unless-stopped
+    ports:
+      - "7474:7474"   # Browser UI
+      - "7687:7687"   # Bolt
+    environment:
+      NEO4J_AUTH: "${NEO4J_USER}/${NEO4J_PASSWORD}"
+      NEO4J_ACCEPT_LICENSE_AGREEMENT: "yes"
+      NEO4J_PLUGINS: '["apoc", "graph-data-science"]'
+      NEO4J_dbms_memory_heap_initial__size: "1G"
+      NEO4J_dbms_memory_heap_max__size: "2G"
+    volumes:
+      - neo4j_data:/data
+      - neo4j_logs:/logs
+      - ${DUMP_PATH}:/dump
+    entrypoint:
+      - /bin/bash
+      - -c
+      - |
+        if [ ! -f /data/.initialized ]; then
+          echo 'Loading Neo4j dump...'
+          neo4j-admin database load neo4j --from-path=/dump --overwrite-destination=true
+          touch /data/.initialized
+          echo 'Dump loaded successfully.'
+        fi
+        exec /startup/docker-entrypoint.sh neo4j
+
+  mysql:
+    image: mysql:8.0
+    container_name: jobseeker_mysql
+    restart: unless-stopped
+    ports:
+      - "3306:3306"
+    environment:
+      MYSQL_ROOT_PASSWORD: "${MYSQL_ROOT_PASSWORD}"
+      MYSQL_DATABASE: "jobseeker"
+      MYSQL_USER: "${MYSQL_USER}"
+      MYSQL_PASSWORD: "${MYSQL_PASSWORD}"
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./mysql/init.sql:/docker-entrypoint-initdb.d/init.sql
+
+  redis:
+    image: redis:7-alpine
+    container_name: jobseeker_redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+
+volumes:
+  neo4j_data:
+  neo4j_logs:
+  mysql_data:
+  redis_data:
